@@ -1,2 +1,0 @@
-python data_processing_augmentation_premask/gene_air_quality.py
-python data_processing_augmentation_premask/gene_ettm1.py

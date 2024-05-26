@@ -1,2 +1,0 @@
-python data_processing/gene_air_quality.py
-python data_processing/gene_ettm1.py
