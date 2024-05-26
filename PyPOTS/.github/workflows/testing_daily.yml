@@ -1,0 +1,69 @@
+name: Daily Testing
+
+on:
+    schedule:
+        # https://crontab.guru. Run everyday at 0:00AM UTC, i.e. 08:00AM Beijing, i.e. 08:00PM Montreal (summer time)
+        - cron: "0 0 * * *"
+
+jobs:
+    Daily-testing:
+        runs-on: ${{ matrix.os }}
+        defaults:
+            run:
+                shell: bash -l {0}
+        strategy:
+            fail-fast: false
+            matrix:
+                os: [ubuntu-latest, windows-latest, macOS-13]
+                python-version: ["3.7", "3.11"]
+
+        steps:
+            - name: Check out the repo code
+              uses: actions/checkout@v3
+
+            - name: Determine the PyTorch version
+              uses: haya14busa/action-cond@v1
+              id: determine_pytorch_ver
+              with:
+                cond: ${{ matrix.python-version == 3.7 }}
+                if_true: "1.13.1"
+                if_false: "2.1.0"
+
+            - name: Set up Conda
+              uses: conda-incubator/setup-miniconda@v2
+              with:
+                  activate-environment: pypots-test
+                  python-version: ${{ matrix.python-version }}
+                  environment-file: tests/environment_for_conda_test.yml
+                  auto-activate-base: false
+
+            - name: Fetch the test environment details
+              run: |
+                  which python
+                  conda info
+                  conda list
+
+            - name: Test with pytest
+              run: |
+                  # run tests separately here due to Segmentation Fault in test_clustering when run all in
+                  # one command with `pytest` on MacOS. Bugs not caught, so this is a trade-off to avoid SF.
+                  python tests/global_test_config.py
+                  rm -rf testing_results && rm -rf tests/__pycache__ && rm -rf tests/*/__pycache__
+                  python -m pytest -rA tests/classification/* -s -n auto --cov=pypots --dist=loadgroup --cov-config=.coveragerc
+                  python -m pytest -rA tests/imputation/* -s -n auto --cov=pypots --cov-append --dist=loadgroup --cov-config=.coveragerc
+                  python -m pytest -rA tests/clustering/* -s -n auto --cov=pypots --cov-append --dist=loadgroup --cov-config=.coveragerc
+                  python -m pytest -rA tests/forecasting/* -s -n auto --cov=pypots --cov-append --dist=loadgroup --cov-config=.coveragerc
+                  python -m pytest -rA tests/optim/* -s -n auto --cov=pypots --cov-append --dist=loadgroup --cov-config=.coveragerc
+                  python -m pytest -rA tests/data/* -s -n auto --cov=pypots --cov-append --dist=loadgroup --cov-config=.coveragerc
+                  python -m pytest -rA tests/utils/* -s -n auto --cov=pypots --cov-append --dist=loadgroup --cov-config=.coveragerc
+                  python -m pytest -rA tests/cli/* -s -n auto --cov=pypots --cov-append --dist=loadgroup --cov-config=.coveragerc
+
+            - name: Generate the LCOV report
+              run: |
+                  python -m coverage lcov
+
+            - name: Submit the report
+              uses: coverallsapp/github-action@master
+              with:
+                  github-token: ${{ secrets.GITHUB_TOKEN }}
+                  path-to-lcov: 'coverage.lcov'
