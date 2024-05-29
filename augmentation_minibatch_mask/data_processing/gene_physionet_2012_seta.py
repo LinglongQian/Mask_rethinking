@@ -11,7 +11,7 @@ import os
 local_tsdb_path = os.path.join('../TSDB')
 sys.path.insert(0, local_tsdb_path)
 import tsdb
-
+print(tsdb.__file__)
 import pandas as pd
 from mcar_augmentation import mcar_augmentation
 from pypots.data.saving import save_dict_into_h5, pickle_dump

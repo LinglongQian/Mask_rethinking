@@ -6,20 +6,21 @@ Corrupt data by adding missing values to it with MCAR (missing completely at ran
 # License: BSD-3-Clause
 
 from typing import Union
-
+import math
 import numpy as np
 import torch
-
 
 def _mcar_numpy(
     X: np.ndarray,
     p: float,
 ) -> np.ndarray:
+    if not (0 <= p <= 1):
+        raise ValueError("p must be between 0 and 1.")
     # clone X to ensure values of X out of this function not being affected
     X = np.copy(X)
     observed_masks = ~np.isnan(X)
     mcar_missing_mask = np.copy(observed_masks.reshape(-1))
-    obs_indices = np.where(mcar_missing_mask)[0].tolist()
+    obs_indices = np.where(mcar_missing_mask)[0]
     miss_indices = np.random.choice(obs_indices, int(len(obs_indices) * p), replace=False)
     mcar_missing_mask[miss_indices] = False
     mcar_missing_mask = mcar_missing_mask.reshape(X.shape)
@@ -31,12 +32,14 @@ def _mcar_torch(
     X: torch.Tensor,
     p: float,
 ) -> torch.Tensor:
+    if not (0 <= p <= 1):
+        raise ValueError("p must be between 0 and 1.")
     # clone X to ensure values of X out of this function not being affected
     X = torch.clone(X)
     observed_masks = ~torch.isnan(X)
     mcar_missing_mask = observed_masks.view(-1).clone()
-    obs_indices = torch.where(mcar_missing_mask)[0].tolist()
-    miss_indices = torch.tensor(np.random.choice(obs_indices, int(len(obs_indices) * p), replace=False))
+    obs_indices = torch.where(mcar_missing_mask)[0]
+    miss_indices = torch.tensor(np.random.choice(obs_indices.numpy(), int(len(obs_indices) * p), replace=False))
     mcar_missing_mask[miss_indices] = False
     mcar_missing_mask = mcar_missing_mask.view(X.shape)
     X[~mcar_missing_mask] = torch.nan  # mask values selected by mcar_missing_mask
