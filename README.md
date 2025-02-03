@@ -2,10 +2,6 @@
 The open-resource repository for the paper [**Unveiling the Secrets: How Masking Strategies Shape Time Series Imputation**]() 
 The code and configurations for reproducing the experimental results in the paper.
 
-# Code for the Time Series Imputation Survey 
-The scripts and configurations used in the work are all put here.
-
-
 ## ❖ Python Environment Creation
 A proper Python environment is necessary to reproduce the results. 
 Please ensure that all the below library requirements are satisfied.
